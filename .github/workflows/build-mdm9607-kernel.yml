@@ -23,17 +23,22 @@ jobs:
           find src/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux -type f -name '*gcc' -exec file {} \; | tee sdk_gcc_file.txt
           find src/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux -type f -name '*gcc' -exec {} --version \; 2>&1 | tee sdk_gcc_version.txt
 
-      - name: Prepare toolchain
+      - name: Prepare SDK toolchain
         run: |
           SDKROOT="$PWD/src/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux"
+          SDK_EXPECTED="/home/ol/Beta_R02_linux/MDM9x07/OpenLinux/MCU_R06_update01/apps_proc/oe-core/build/tmp-glibc/deploy/sdk"
+          sudo mkdir -p "$SDK_EXPECTED"
+          sudo rm -f "$SDK_EXPECTED/ql-ol-sdk"
+          sudo ln -s "$PWD/src/ql-ol-sdk" "$SDK_EXPECTED/ql-ol-sdk"
           TC_GCC="$(find "$SDKROOT" -type f -path '*/usr/bin/*/*gcc' | grep -E 'arm.*gcc$|gnueabi.*gcc$' | head -1)"
+          echo "SDKROOT=$SDKROOT"
           echo "TC_GCC=$TC_GCC"
           file "$TC_GCC" || true
-          "$TC_GCC" --version | head -5 || true
           echo "$(dirname "$TC_GCC")" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$SDKROOT/usr/lib:$SDKROOT/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           PREFIX="$(basename "$TC_GCC" | sed 's/gcc$//')"
           echo "CROSS_PREFIX=$PREFIX" >> $GITHUB_ENV
-          echo "Using CROSS_PREFIX=$PREFIX"
+          "$TC_GCC" --version | head -5
 
       - name: Patch old kernel build issues
         run: |
@@ -75,6 +80,10 @@ jobs:
           scripts/config --disable DEBUG_INFO || true
           scripts/config --disable DEBUG_KERNEL || true
           scripts/config --disable KALLSYMS_ALL || true
+          scripts/config --enable MSM_QDSP6_APRV2 || true
+          scripts/config --disable MSM_QDSP6_APRV3 || true
+          make ARCH=arm CROSS_COMPILE=${CROSS_PREFIX} olddefconfig
+          scripts/config --disable MSM_QDSP6_APRV3 || true
           make ARCH=arm CROSS_COMPILE=${CROSS_PREFIX} olddefconfig
           grep -E 'CONFIG_LOCALVERSION|CONFIG_MODULES|CONFIG_MODVERSIONS|CONFIG_MSM_QDSP6V2_CODECS|CONFIG_SND_SOC_MSM_HOSTLESS_PCM|CONFIG_SND_SOC_MSM_QDSP6V2_INTF|CONFIG_SND_SOC_QDSP6V2|CONFIG_SND_SOC_MDM9607|CONFIG_SND_SOC_MSM_STUB|CONFIG_MSM_QDSP6_APRV3|CONFIG_MSM_QDSP6_APRV2|CONFIG_SND_DYNAMIC_MINORS|CONFIG_SND_MAX_CARDS|CONFIG_DEBUG_INFO|CONFIG_DEBUG_KERNEL|CONFIG_KALLSYMS_ALL' .config | tee ../../kernel_config_check.txt
 

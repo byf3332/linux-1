@@ -29,13 +29,6 @@ jobs:
           echo "CROSS_PREFIX=$PREFIX" >> $GITHUB_ENV
           echo "Using CROSS_PREFIX=$PREFIX"
 
-      - name: Prepare toolchain
-        run: |
-          mkdir -p toolchain
-          find src/ql-ol-sdk/ql-ol-crosstool -type f -name '*gcc' -o -name 'arm-*gcc' -o -name '*gnueabi*gcc' | sort | tee toolchain/found_gcc.txt || true
-          TC_GCC="$(find src/ql-ol-sdk/ql-ol-crosstool -type f \( -name 'arm-*gcc' -o -name '*gnueabi*gcc' \) | head -1 || true)"
-          if [ -n "$TC_GCC" ]; then echo "Using SDK toolchain: $TC_GCC"; echo "$(dirname "$TC_GCC")" >> $GITHUB_PATH; PREFIX="$(basename "$TC_GCC" | sed 's/gcc$//')"; echo "CROSS_PREFIX=$PREFIX" >> $GITHUB_ENV; else wget -O toolchain/linaro.tar.xz https://releases.linaro.org/components/toolchain/binaries/4.9-2017.01/arm-linux-gnueabihf/gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf.tar.xz; tar -xf toolchain/linaro.tar.xz -C toolchain; echo "$PWD/toolchain/gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf/bin" >> $GITHUB_PATH; echo "CROSS_PREFIX=arm-linux-gnueabihf-" >> $GITHUB_ENV; fi
-
       - name: Patch old kernel build issues
         run: |
           cd src/ql-ol-sdk/ql-ol-kernel

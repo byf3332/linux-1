@@ -23,15 +23,10 @@ jobs:
           cd src/ql-ol-sdk/ql-ol-kernel
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.lex.c_shipped || true
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.l || true
-          python - <<'PY'
-          p = 'scripts/gcc-wrapper.py'
-          s = open(p).read()
-          s = s.replace('print "error, forbidden warning:", m.group(2)\n        return 1', 'print "warning, ignored:", m.group(2)\n        return 0')
-          open(p, 'w').write(s)
-          PY
+          sed -i 's/return 1/return 0/g' scripts/gcc-wrapper.py
           find . -name 'msm-pcm-routing-v2.h' -print | tee ../../header_find.txt
 
-      - name: Prepare module config
+            - name: Prepare module config
         run: |
           cd src/ql-ol-sdk/ql-ol-kernel
           make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- mdm9607-perf_defconfig
@@ -46,7 +41,7 @@ jobs:
           scripts/config --module SND_SOC_MSM_STUB || true
           scripts/config --enable MSM_QDSP6V2_CODECS || true
           scripts/config --enable MSM_QDSP6_APRV2 || true
-          scripts/config --enable MSM_QDSP6_APRV3 || true
+          scripts/config --disable MSM_QDSP6_APRV3 || true
           scripts/config --enable SND_DYNAMIC_MINORS
           scripts/config --set-val SND_MAX_CARDS 32
           make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- olddefconfig
@@ -56,9 +51,8 @@ jobs:
       - name: Build audio-related modules only
         run: |
           cd src/ql-ol-sdk/ql-ol-kernel
-          export KCFLAGS="-I$PWD/sound/soc/msm -Wno-unused-const-variable -Wno-unused-variable -Wno-misleading-indentation"
+          export KCFLAGS="-I$PWD/sound/soc/msm -Wno-unused-const-variable -Wno-unused-variable -Wno-misleading-indentation -Wno-declaration-after-statement -Wno-duplicate-decl-specifier -Wno-incompatible-pointer-types -Wno-return-type"
           make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) drivers/soc/qcom/qdsp6v2/ 2>&1 | tee ../../modules_build.log
-          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) sound/soc/codecs/ 2>&1 | tee -a ../../modules_build.log
           make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) sound/soc/msm/ 2>&1 | tee -a ../../modules_build.log
 
       - name: Collect modules

@@ -17,6 +17,12 @@ jobs:
         run: |
           git clone https://github.com/byf3332/linux-1.git src
 
+      - name: Inspect SDK crosstool
+        run: |
+          find src/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux -type f -name '*gcc' | sort | tee sdk_gcc_list.txt
+          find src/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux -type f -name '*gcc' -exec file {} \; | tee sdk_gcc_file.txt
+          find src/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux -type f -name '*gcc' -exec {} --version \; 2>&1 | tee sdk_gcc_version.txt
+
       - name: Prepare toolchain
         run: |
           SDKROOT="$PWD/src/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux"

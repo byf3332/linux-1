@@ -20,8 +20,8 @@ jobs:
       - name: Copy original kernel config
         run: |
           mkdir -p out
-          cp .github/kernel_configs/qdc507_orig_boot.config out/qdc507_orig_boot.config
-          cp .github/kernel_configs/qdc507_orig_boot.config src/ql-ol-sdk/ql-ol-kernel/.config
+          cp src/.github/kernel_configs/qdc507_orig_boot.config out/qdc507_orig_boot.config
+          cp src/.github/kernel_configs/qdc507_orig_boot.config src/ql-ol-sdk/ql-ol-kernel/.config
 
       - name: Inspect SDK crosstool
         run: |

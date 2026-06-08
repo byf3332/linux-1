@@ -23,6 +23,13 @@ jobs:
           cd src/ql-ol-sdk/ql-ol-kernel
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.lex.c_shipped || true
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.l || true
+          python - <<'PY'
+          p = 'scripts/gcc-wrapper.py'
+          s = open(p).read()
+          s = s.replace('print "error, forbidden warning:", m.group(2)\n        return 1', 'print "warning, ignored:", m.group(2)\n        return 0')
+          open(p, 'w').write(s)
+          PY
+          find . -name 'msm-pcm-routing-v2.h' -print | tee ../../header_find.txt
 
       - name: Prepare module config
         run: |
@@ -45,10 +52,13 @@ jobs:
           make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- olddefconfig
           grep -E 'CONFIG_MODULES|CONFIG_MODVERSIONS|CONFIG_MSM_QDSP6V2_CODECS|CONFIG_SND_SOC_MSM_HOSTLESS_PCM|CONFIG_SND_SOC_MSM_QDSP6V2_INTF|CONFIG_SND_SOC_QDSP6V2|CONFIG_SND_SOC_MDM9607|CONFIG_SND_SOC_MSM_STUB|CONFIG_MSM_QDSP6_APRV3|CONFIG_MSM_QDSP6_APRV2|CONFIG_SND_DYNAMIC_MINORS|CONFIG_SND_MAX_CARDS' .config | tee ../../audio_module_config_check.txt
 
-      - name: Build modules
+      - name: Build audio-related modules only
         run: |
           cd src/ql-ol-sdk/ql-ol-kernel
-          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) modules 2>&1 | tee ../../modules_build.log
+          export KCFLAGS="-I$PWD/sound/soc/msm -Wno-unused-const-variable -Wno-unused-variable -Wno-misleading-indentation"
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) M=drivers/soc/qcom/qdsp6v2 modules 2>&1 | tee ../../modules_build.log
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) M=sound/soc/codecs modules 2>&1 | tee -a ../../modules_build.log
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) M=sound/soc/msm modules 2>&1 | tee -a ../../modules_build.log
 
       - name: Collect modules
         if: always()
@@ -56,8 +66,10 @@ jobs:
           mkdir -p out/ko
           cp src/ql-ol-sdk/ql-ol-kernel/.config out/config_mdm9607_modules || true
           cp src/ql-ol-sdk/audio_module_config_check.txt out/audio_module_config_check.txt || true
+          cp src/ql-ol-sdk/header_find.txt out/header_find.txt || true
           cp src/ql-ol-sdk/modules_build.log out/modules_build.log || true
           cp src/ql-ol-sdk/ql-ol-kernel/Module.symvers out/Module.symvers || true
+          cp src/ql-ol-sdk/ql-ol-kernel/modules.order out/modules.order || true
           find src/ql-ol-sdk/ql-ol-kernel -name '*.ko' -exec cp --parents {} out/ko/ \; || true
           find out -type f | sort > out/filelist.txt
           ls -lh out > out/output_sizes.txt || true

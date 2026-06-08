@@ -62,6 +62,8 @@ jobs:
 
           cp "$GITHUB_WORKSPACE/src/.github/kernel_configs/qdc507_orig_boot.config" .config
 
+          scripts/config --disable MTD_UBI_BLOCK || true
+
           make ARCH=arm \
             CROSS_COMPILE=${CROSS_PREFIX} \
             CC=${CROSS_PREFIX}gcc \

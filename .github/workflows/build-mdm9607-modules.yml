@@ -50,15 +50,16 @@ jobs:
           scripts/config --enable SND_DYNAMIC_MINORS
           scripts/config --set-val SND_MAX_CARDS 32
           make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- olddefconfig
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- prepare modules_prepare
           grep -E 'CONFIG_MODULES|CONFIG_MODVERSIONS|CONFIG_MSM_QDSP6V2_CODECS|CONFIG_SND_SOC_MSM_HOSTLESS_PCM|CONFIG_SND_SOC_MSM_QDSP6V2_INTF|CONFIG_SND_SOC_QDSP6V2|CONFIG_SND_SOC_MDM9607|CONFIG_SND_SOC_MSM_STUB|CONFIG_MSM_QDSP6_APRV3|CONFIG_MSM_QDSP6_APRV2|CONFIG_SND_DYNAMIC_MINORS|CONFIG_SND_MAX_CARDS' .config | tee ../../audio_module_config_check.txt
 
       - name: Build audio-related modules only
         run: |
           cd src/ql-ol-sdk/ql-ol-kernel
           export KCFLAGS="-I$PWD/sound/soc/msm -Wno-unused-const-variable -Wno-unused-variable -Wno-misleading-indentation"
-          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) M=drivers/soc/qcom/qdsp6v2 modules 2>&1 | tee ../../modules_build.log
-          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) M=sound/soc/codecs modules 2>&1 | tee -a ../../modules_build.log
-          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) M=sound/soc/msm modules 2>&1 | tee -a ../../modules_build.log
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) drivers/soc/qcom/qdsp6v2/ 2>&1 | tee ../../modules_build.log
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) sound/soc/codecs/ 2>&1 | tee -a ../../modules_build.log
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) sound/soc/msm/ 2>&1 | tee -a ../../modules_build.log
 
       - name: Collect modules
         if: always()

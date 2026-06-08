@@ -26,7 +26,7 @@ jobs:
           sed -i 's/return 1/return 0/g' scripts/gcc-wrapper.py
           find . -name 'msm-pcm-routing-v2.h' -print | tee ../../header_find.txt
 
-            - name: Prepare module config
+      - name: Prepare module config
         run: |
           cd src/ql-ol-sdk/ql-ol-kernel
           make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- mdm9607-perf_defconfig

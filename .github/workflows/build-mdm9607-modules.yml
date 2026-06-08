@@ -12,10 +12,17 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y git build-essential bc bison flex libssl-dev libncurses5-dev device-tree-compiler gcc-arm-linux-gnueabi python3
+          sudo ln -sf /usr/bin/python3 /usr/local/bin/python2
 
       - name: Clone source
         run: |
           git clone https://github.com/hewenhao2008/linux-1.git src
+
+      - name: Patch old kernel build issues
+        run: |
+          cd src/ql-ol-sdk/ql-ol-kernel
+          sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.lex.c_shipped || true
+          sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.l || true
 
       - name: Prepare module config
         run: |
@@ -31,6 +38,7 @@ jobs:
           scripts/config --module SND_SOC_MSM_HOSTLESS_PCM || true
           scripts/config --module SND_SOC_MSM_STUB || true
           scripts/config --enable MSM_QDSP6V2_CODECS || true
+          scripts/config --enable MSM_QDSP6_APRV2 || true
           scripts/config --enable MSM_QDSP6_APRV3 || true
           scripts/config --enable SND_DYNAMIC_MINORS
           scripts/config --set-val SND_MAX_CARDS 32

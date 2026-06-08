@@ -6,13 +6,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container: ubuntu:18.04
 
     steps:
       - name: Install build deps
         run: |
-          apt update
-          apt install -y git build-essential bc bison flex libssl-dev libncurses5-dev device-tree-compiler gcc-arm-linux-gnueabi python python-minimal ca-certificates u-boot-tools
+          sudo apt update
+          sudo apt install -y git build-essential bc bison flex libssl-dev libncurses5-dev device-tree-compiler gcc-arm-linux-gnueabi python3 ca-certificates u-boot-tools
 
       - name: Clone source
         run: |
@@ -23,7 +22,22 @@ jobs:
           cd src/ql-ol-sdk/ql-ol-kernel
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.lex.c_shipped || true
           sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.l || true
-          sed -i 's/return 1/return 0/g' scripts/gcc-wrapper.py
+          2to3 -w scripts/gcc-wrapper.py || true
+          cat > scripts/gcc-wrapper.py <<'PY'
+          #!/usr/bin/env python3
+          import os
+          import subprocess
+          import sys
+          def main():
+              args = sys.argv[1:]
+              if not args:
+                  return 0
+              p = subprocess.Popen(args)
+              return p.wait()
+          if __name__ == "__main__":
+              sys.exit(main())
+          PY
+          chmod +x scripts/gcc-wrapper.py
           find . -name 'msm-pcm-routing-v2.h' -print | tee ../../header_find.txt
 
       - name: Prepare kernel config

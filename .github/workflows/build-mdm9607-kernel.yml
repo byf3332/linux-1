@@ -108,7 +108,7 @@ jobs:
             CROSS_COMPILE=${CROSS_PREFIX} \
             CC=${CROSS_PREFIX}gcc \
             HOSTCFLAGS="-fcommon" \
-            KCFLAGS="-I$PWD/sound/soc/msm -I$PWD/drivers/net/ethernet/msm -I$PWD/drivers/platform/msm/ipa/ipa_v2" \
+            KCFLAGS="-I$PWD/sound/soc/msm -I$PWD/drivers/net/ethernet/msm -I$PWD/drivers/platform/msm/ipa/ipa_v2 -I$PWD/drivers/soc/qcom -I$PWD/drivers/usb/gadget" \
             -j$(nproc) zImage dtbs 2>&1 | tee "$GITHUB_WORKSPACE/out/kernel_build.log"
 
       - name: Collect outputs

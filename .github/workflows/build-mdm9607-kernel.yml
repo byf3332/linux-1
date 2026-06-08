@@ -86,8 +86,10 @@ jobs:
 
       - name: Build zImage and dtbs
         run: |
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/out"
           cd src/ql-ol-sdk/ql-ol-kernel
-          make ARCH=arm CROSS_COMPILE=${CROSS_PREFIX} -j$(nproc) zImage dtbs 2>&1 | tee ../../kernel_build.log
+          make ARCH=arm CROSS_COMPILE=${CROSS_PREFIX} KCFLAGS="-I$PWD/sound/soc/msm" -j$(nproc) zImage dtbs 2>&1 | tee "$GITHUB_WORKSPACE/out/kernel_build.log"
 
       - name: Collect outputs
         if: always()
@@ -97,15 +99,12 @@ jobs:
           cp sdk_gcc_file.txt out/sdk_gcc_file.txt || true
           cp sdk_gcc_version.txt out/sdk_gcc_version.txt || true
           cp src/ql-ol-sdk/ql-ol-kernel/.config out/config_mdm9607_kernel || true
-          cp src/ql-ol-sdk/header_find.txt out/header_find.txt || true
-          cp src/ql-ol-sdk/kernel_config_check.txt out/kernel_config_check.txt || true
-          cp src/ql-ol-sdk/kernel_build.log out/kernel_build.log || true
           cp src/ql-ol-sdk/ql-ol-kernel/arch/arm/boot/zImage out/zImage_mdm9607_audio || true
           find src/ql-ol-sdk/ql-ol-kernel/arch/arm/boot/dts/qcom -name 'mdm9607*.dtb' -exec cp {} out/dtb/ \; || true
           find out -type f | sort > out/filelist.txt
           ls -lh out > out/output_sizes.txt || true
           ls -lh out/dtb >> out/output_sizes.txt || true
-          du -h out/zImage_mdm9607_audio >> out/output_sizes.txt || true
+          if [ -f out/zImage_mdm9607_audio ]; then du -h out/zImage_mdm9607_audio >> out/output_sizes.txt; fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

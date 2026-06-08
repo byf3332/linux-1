@@ -60,7 +60,7 @@ jobs:
           echo "Using CROSS_COMPILE=${CROSS_PREFIX}"
           ${CROSS_PREFIX}gcc --version | head -5
 
-          cp "$GITHUB_WORKSPACE/.github/kernel_configs/qdc507_orig_boot.config" .config
+          cp "$GITHUB_WORKSPACE/src/.github/kernel_configs/qdc507_orig_boot.config" .config
 
           make ARCH=arm \
             CROSS_COMPILE=${CROSS_PREFIX} \
@@ -71,7 +71,7 @@ jobs:
           cp .config "$GITHUB_WORKSPACE/out/config_qdc507_baseline_after_olddefconfig"
 
           echo "===== config diff against original =====" | tee "$GITHUB_WORKSPACE/out/config_diff.txt"
-          diff -u "$GITHUB_WORKSPACE/.github/kernel_configs/qdc507_orig_boot.config" .config | tee -a "$GITHUB_WORKSPACE/out/config_diff.txt" || true
+          diff -u "$GITHUB_WORKSPACE/src/.github/kernel_configs/qdc507_orig_boot.config" .config | tee -a "$GITHUB_WORKSPACE/out/config_diff.txt" || true
 
           grep -E 'CONFIG_LOCALVERSION|CONFIG_LOCALVERSION_AUTO|CONFIG_MODULES|CONFIG_MODVERSIONS|CONFIG_ARCH_MDM9607|CONFIG_MSM_QDSP6V2_CODECS|CONFIG_SND_SOC_QDSP6V2|CONFIG_SND_SOC_MDM9607|CONFIG_MSM_QDSP6_APRV2|CONFIG_MSM_QDSP6_APRV3|CONFIG_IPA=|CONFIG_IPA3|CONFIG_DEBUG_INFO|CONFIG_DEBUG_GPIO' .config | tee "$GITHUB_WORKSPACE/out/baseline_config_check.txt" || true
 

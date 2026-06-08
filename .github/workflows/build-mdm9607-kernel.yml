@@ -89,7 +89,7 @@ jobs:
           set -o pipefail
           mkdir -p "$GITHUB_WORKSPACE/out"
           cd src/ql-ol-sdk/ql-ol-kernel
-          make ARCH=arm CROSS_COMPILE=${CROSS_PREFIX} KCFLAGS="-I$PWD/sound/soc/msm -I$PWD/drivers/net/ethernet/msm" -j$(nproc) zImage dtbs 2>&1 | tee "$GITHUB_WORKSPACE/out/kernel_build.log"
+          make ARCH=arm CROSS_COMPILE=${CROSS_PREFIX} KCFLAGS="-I$PWD/sound/soc/msm -I$PWD/drivers/net/ethernet/msm -I$PWD/drivers/platform/msm/ipa/ipa_v2" -j$(nproc) zImage dtbs 2>&1 | tee "$GITHUB_WORKSPACE/out/kernel_build.log"
 
       - name: Collect outputs
         if: always()

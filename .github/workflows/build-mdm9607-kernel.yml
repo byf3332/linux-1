@@ -1,0 +1,76 @@
+name: build-mdm9607-kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ubuntu:18.04
+
+    steps:
+      - name: Install build deps
+        run: |
+          apt update
+          apt install -y git build-essential bc bison flex libssl-dev libncurses5-dev device-tree-compiler gcc-arm-linux-gnueabi python python-minimal ca-certificates u-boot-tools
+
+      - name: Clone source
+        run: |
+          git clone https://github.com/hewenhao2008/linux-1.git src
+
+      - name: Patch old kernel build issues
+        run: |
+          cd src/ql-ol-sdk/ql-ol-kernel
+          sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.lex.c_shipped || true
+          sed -i 's/^YYLTYPE yylloc;/extern YYLTYPE yylloc;/' scripts/dtc/dtc-lexer.l || true
+          sed -i 's/return 1/return 0/g' scripts/gcc-wrapper.py
+          find . -name 'msm-pcm-routing-v2.h' -print | tee ../../header_find.txt
+
+      - name: Prepare kernel config
+        run: |
+          cd src/ql-ol-sdk/ql-ol-kernel
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- mdm9607-perf_defconfig
+          scripts/config --enable SND
+          scripts/config --enable SND_PCM
+          scripts/config --enable SND_SOC
+          scripts/config --enable MSM_QDSP6V2_CODECS || true
+          scripts/config --enable MSM_QDSP6_APRV2 || true
+          scripts/config --disable MSM_QDSP6_APRV3 || true
+          scripts/config --enable SND_SOC_MSM_HOSTLESS_PCM || true
+          scripts/config --enable SND_SOC_MSM_QDSP6V2_INTF || true
+          scripts/config --enable SND_SOC_QDSP6V2 || true
+          scripts/config --enable SND_SOC_MDM9607 || true
+          scripts/config --enable SND_SOC_MSM_STUB || true
+          scripts/config --enable SND_DYNAMIC_MINORS
+          scripts/config --set-val SND_MAX_CARDS 32
+          scripts/config --disable DEBUG_INFO || true
+          scripts/config --disable DEBUG_KERNEL || true
+          scripts/config --disable KALLSYMS_ALL || true
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- olddefconfig
+          grep -E 'CONFIG_LOCALVERSION|CONFIG_MODULES|CONFIG_MODVERSIONS|CONFIG_MSM_QDSP6V2_CODECS|CONFIG_SND_SOC_MSM_HOSTLESS_PCM|CONFIG_SND_SOC_MSM_QDSP6V2_INTF|CONFIG_SND_SOC_QDSP6V2|CONFIG_SND_SOC_MDM9607|CONFIG_SND_SOC_MSM_STUB|CONFIG_MSM_QDSP6_APRV3|CONFIG_MSM_QDSP6_APRV2|CONFIG_SND_DYNAMIC_MINORS|CONFIG_SND_MAX_CARDS|CONFIG_DEBUG_INFO|CONFIG_DEBUG_KERNEL|CONFIG_KALLSYMS_ALL' .config | tee ../../kernel_config_check.txt
+
+      - name: Build zImage and dtbs
+        run: |
+          cd src/ql-ol-sdk/ql-ol-kernel
+          make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc) zImage dtbs 2>&1 | tee ../../kernel_build.log
+
+      - name: Collect outputs
+        if: always()
+        run: |
+          mkdir -p out/dtb
+          cp src/ql-ol-sdk/ql-ol-kernel/.config out/config_mdm9607_kernel || true
+          cp src/ql-ol-sdk/header_find.txt out/header_find.txt || true
+          cp src/ql-ol-sdk/kernel_config_check.txt out/kernel_config_check.txt || true
+          cp src/ql-ol-sdk/kernel_build.log out/kernel_build.log || true
+          cp src/ql-ol-sdk/ql-ol-kernel/arch/arm/boot/zImage out/zImage_mdm9607_audio || true
+          find src/ql-ol-sdk/ql-ol-kernel/arch/arm/boot/dts/qcom -name 'mdm9607*.dtb' -exec cp {} out/dtb/ \; || true
+          find out -type f | sort > out/filelist.txt
+          ls -lh out > out/output_sizes.txt || true
+          ls -lh out/dtb >> out/output_sizes.txt || true
+          du -h out/zImage_mdm9607_audio >> out/output_sizes.txt || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdm9607-kernel-build
+          path: out/

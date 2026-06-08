@@ -6,13 +6,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    container: ubuntu:18.04
 
     steps:
       - name: Install build deps
         run: |
-          sudo apt update
-          sudo apt install -y git build-essential bc bison flex libssl-dev libncurses5-dev device-tree-compiler gcc-arm-linux-gnueabi python3
-          sudo ln -sf /usr/bin/python3 /usr/local/bin/python2
+          apt update
+          apt install -y git build-essential bc bison flex libssl-dev libncurses5-dev device-tree-compiler gcc-arm-linux-gnueabi python python-minimal ca-certificates
 
       - name: Clone source
         run: |
